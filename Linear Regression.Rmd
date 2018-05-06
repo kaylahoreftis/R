@@ -1,0 +1,126 @@
+---
+title: "Linear Regresion (R)"
+output: html_notebook
+---
+
+##So What is Linear Regression, Anyways?
+
+> The goal of a linear regression is to model a continuous variable, Y, as a function of one or more X variables. The mathematical formula to represent this relationship can be observed as the following:
+
+$Y = Intercept + b1 * Variable_1 + b2 * Variable_2 + b3 * Variable_3……+ϵ$
+
+Where b represents the regression coefficient(s) and ϵ represents the error term.
+
+##The Problem & Data Set
+
+For this example, we will use the World Record data for the Men's 800 meter track event. The data set consists of 24 observations and 7 variables. To begin this analysis, let's take a look at the first six observations by using the head command:
+
+```{r}
+head(wr)
+```
+
+##Analyzing the Data Graphically
+
+The goal of this problem is to predict the record times for the Men's 800m race. However, before creating the linear regression model it is best to create a scatter plot and box plot for each predictor (independent) variable in order to better understand them graphically.
+
+
+###Scatter Plot
+
+The purpose of the scatter plot is to determine if there is a linear relationship between the record time (response variable) and the year of the event (predictor variable). 
+
+```{r}
+scatter.smooth(x=wr$Year, y=wr$Record, main="Records by Year", xlab='Year', ylab='Record Time')
+```
+
+###Box Plot
+
+The box plot is used to check for any outliers for any of the variables in the data set. This is an important step, as outliers can affect the predictions of the slope of the line of best fit.
+
+```{r}
+par(mfrow=c(1, 2))
+boxplot(wr$Year, main="Year", sub=paste("Outlier rows: ", boxplot.stats(wr$Year)$out))
+boxplot(wr$Record, main="Record Time", sub=paste("Outlier rows: ", boxplot.stats(wr$Record)$out))
+```
+
+As shown in the previous two graphical representations, there is a linear relationship between the variables and there is no presence of outliers. Therefore, we can continue on to creating the linear regression model for this data set.
+
+##Building the Linear Regression Model
+
+###But Wait, First... Correlation
+
+The first step in building the linear regression model is to determine the correlation between the predictor (year) and response (record time) variables. 
+
+```{r}
+cor(wr$Record, wr$Year)
+```
+To verify a strong statistical correlation, the correlation value should be close to 1 or -1. The correlation value for this data set shows that for every instance of an increase in the year there is a corresponding instance of a decresase in the record time. 
+
+###Now Grab Your Hammers and Let's Start Building!
+
+```{r}
+wrLinMod <- lm(wr$Year ~ wr$Record) 
+print(wrLinMod)
+```
+Our equation from the linear regression model shows that for every increase in the year there is a 7.636 second decrease in the record time for the Men's 800m event.
+
+###Is it Significant?
+
+```{r}
+summary(wrLinMod)
+```
+
+
+So what does all of that actually tell us? 
+For simplicity's sake, we will focus on the Adjusted R-squared and p-values. The R-squared value represents the accuracy of the predictor variables to predict the response variable. A perfect prediction model would have an R-squared value of 1 and a model with an R-squared value above 0.70 is considered to be strong. The linear model had an adjusted R-squared value of 0.9326, therefore it was very strong predictive model. P-values indicate if the probability of a relationship between the predictor variable and the response variable is high. P-values less than 0.05 indicate that changes in the predictor variable’s value are related to changes in the response variable and therefore show a high probability of a relationship between the predictor and response variables.
+
+Keep in mind that for larger and more complex data sets other methods of valiadation such as:
+
+* F-Statistic	(higher value is better)
+* Std. Error	(value closer to zero is better)
+* t-statistic	(higher value is better)
+* AIC	(lower value is better)
+* BIC	(lower value is better)
+* Mallows cp	(value should be close to the number of predictors in model)
+* MAPE- Mean absolute percentage error (lower value is better)
+* MSE- Mean squared error (lower value is better)
+
+###Making Predictions
+
+Since we do not have another data set to run the predicitive model against, it is best practice to use the 80:20 method. This method takes 80% of the existing data set to train the model and the remaining 20% of the data set is used to make predictions. 
+
+###Step 1: Splitting the Data Set (80:20)
+```{r}
+set.seed(100)  # setting data set to produce random sample
+trainingRowIndex <- sample(1:nrow(wr), 0.8*nrow(wr))  
+trainingData <- wr[trainingRowIndex, ]  
+testData  <- wr[-trainingRowIndex, ]
+```
+
+###Step 2: Create the Model Using the Training Data
+```{r}
+linMod <- lm(Record ~ Year, data=trainingData)
+```
+
+###Step 3: Use the Model to Make Predictions
+```{r}
+recordPred <- predict(linMod, testData) 
+```
+
+###Step 4: Review the Model Summary
+```{r}
+summary(linMod)
+```
+
+###Step 5: Calculate Actual & Predicted Record Times
+```{r}
+actuals_preds <- data.frame(cbind(actuals=testData$Record, predicteds=recordPred))
+correlation_accuracy <- cor(actuals_preds)  
+head(actuals_preds)
+```
+
+![](Desktop/finalgraph.png)
+
+For the final step, the predicted values were pulled into the test data set and the values were plotted via Tableau. [Record Times-Tableau Public Profile](https://public.tableau.com/profile/kayla.horeftis#!/vizhome/RecordTimes/RecordTimeActualvsPredicted)
+
+
+*This article was created using R Notebook.*
